@@ -37,6 +37,14 @@ def generate_lesson_video(metaphor_description: str):
             
         client = genai.Client(api_key=api_key)
         
+        # Diagnostic: List models to see if veo-001 is available
+        try:
+            available_models = [m.name for m in client.models.list()]
+            if 'models/veo-001' not in available_models and 'veo-001' not in available_models:
+                return f"Error: 'veo-001' not found in your account. Available models: {available_models[:10]}..."
+        except Exception as e:
+            print(f"Model list diagnostic failed: {e}")
+            
         # For Veo, we use the model name and provide the prompt
         # Config uses a simpler dictionary format in the new SDK
         response = client.models.generate_videos(
