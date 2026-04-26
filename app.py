@@ -122,6 +122,16 @@ if mode == "Surprise":
 
 lens_to_use = custom_lens if mode == "Surprise" and custom_lens else mode
 
+# Initialize session state for persistence
+if "mapping" not in st.session_state:
+    st.session_state.mapping = None
+if "lesson" not in st.session_state:
+    st.session_state.lesson = None
+if "fact_check" not in st.session_state:
+    st.session_state.fact_check = None
+if "viz_prompt" not in st.session_state:
+    st.session_state.viz_prompt = None
+
 # Generate Action
 if concept and lens_to_use:
     # Inject Vibe CSS
@@ -133,45 +143,49 @@ if concept and lens_to_use:
     if st.button("🚀 Generate Lesson"):
         # 1. Map Context
         with st.spinner(f"Mapping '{concept}' to the world of '{lens_to_use}'..."):
-            mapping = get_lens_mapping(concept, lens_to_use)
+            st.session_state.mapping = get_lens_mapping(concept, lens_to_use)
             
-        with st.expander("🧩 View Context Mapping (Agent A)", expanded=False):
-            if mapping:
-                st.json(mapping)
-            else:
-                st.error("Failed to generate mapping.")
-                
-        if mapping:
+        if st.session_state.mapping:
             # 2. Teach
             with st.spinner("Preparing your lesson..."):
-                lesson = teacher_agent(concept, lens_to_use, mapping)
-                st.markdown("## 📖 The Lesson")
-                st.info("💡 *Hover over the dashed terms to see their technical translation!*")
-                # Using container to ensure CSS context
-                with st.container():
-                    st.markdown(lesson, unsafe_allow_html=True)
+                st.session_state.lesson = teacher_agent(concept, lens_to_use, st.session_state.mapping)
                 
             # 3. Fact Check
             with st.spinner("Fact-checker verifying technical accuracy..."):
-                fact_check = fact_checker_agent(concept, lesson)
-                st.markdown("## ✅ Fact-Checker Assessment")
-                st.success(fact_check)
+                st.session_state.fact_check = fact_checker_agent(concept, st.session_state.lesson)
                 
             # 4. Visualize
             with st.spinner("Drafting image prompt..."):
-                viz_prompt = visualizer_agent(concept, lens_to_use, mapping)
-                st.markdown("## 🎨 Visualizer Prompt (Imagen 3)")
-                st.code(viz_prompt, language="text")
-                
-            # 5. Video (Veo)
-            st.markdown("---")
-            st.markdown("## 🎬 Video Learning (Veo Agent)")
-            if st.button("🎥 Generate Video Animation"):
-                with st.spinner("Creating cinematic animation via Vertex AI..."):
-                    metaphor_desc = mapping.get("metaphor_description", "The core concept")
-                    video_url = generate_lesson_video(metaphor_desc)
-                    if video_url and not video_url.startswith("Error"):
-                        st.video(video_url)
-                        st.success("Video generated successfully!")
-                    else:
-                        st.warning(f"Note: Video generation is currently in preview or failed. Details: {video_url}")
+                st.session_state.viz_prompt = visualizer_agent(concept, lens_to_use, st.session_state.mapping)
+
+    # Display Results (Outside of the button block so they persist)
+    if st.session_state.mapping:
+        with st.expander("🧩 View Context Mapping (Agent A)", expanded=False):
+            st.json(st.session_state.mapping)
+            
+        if st.session_state.lesson:
+            st.markdown("## 📖 The Lesson")
+            st.info("💡 *Hover over the dashed terms to see their technical translation!*")
+            with st.container():
+                st.markdown(st.session_state.lesson, unsafe_allow_html=True)
+            
+        if st.session_state.fact_check:
+            st.markdown("## ✅ Fact-Checker Assessment")
+            st.success(st.session_state.fact_check)
+            
+        if st.session_state.viz_prompt:
+            st.markdown("## 🎨 Visualizer Prompt (Imagen 3)")
+            st.code(st.session_state.viz_prompt, language="text")
+            
+        # 5. Video (Veo)
+        st.markdown("---")
+        st.markdown("## 🎬 Video Learning (Veo Agent)")
+        if st.button("🎥 Generate Video Animation"):
+            with st.spinner("Creating cinematic animation via Vertex AI..."):
+                metaphor_desc = st.session_state.mapping.get("metaphor_description", "The core concept")
+                video_url = generate_lesson_video(metaphor_desc)
+                if video_url and not isinstance(video_url, str) or (isinstance(video_url, str) and not video_url.startswith("Error")):
+                    st.video(video_url)
+                    st.success("Video generated successfully!")
+                else:
+                    st.warning(f"Note: Video generation is currently in preview or failed. Details: {video_url}")
