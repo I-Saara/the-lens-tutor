@@ -1,14 +1,27 @@
 import json
 import google.generativeai as genai
 from typing import Dict
+import streamlit as st
+from google.oauth2 import service_account
 
 def configure_gemini(api_key: str):
     """Configure the Gemini API key and Vertex AI."""
     genai.configure(api_key=api_key)
-    # Vertex AI initialization (requires GCP credentials in environment)
+    
+    # Vertex AI initialization using Streamlit Secrets
     try:
         import vertexai
-        vertexai.init(location="us-central1")
+        if "gcp_service_account" in st.secrets:
+            creds_info = st.secrets["gcp_service_account"]
+            credentials = service_account.Credentials.from_service_account_info(creds_info)
+            vertexai.init(
+                project=creds_info["project_id"],
+                location="us-central1",
+                credentials=credentials
+            )
+        else:
+            # Fallback to default (for local testing with gcloud)
+            vertexai.init(location="us-central1")
     except Exception as e:
         print(f"Vertex AI Init Note: {e}")
 
