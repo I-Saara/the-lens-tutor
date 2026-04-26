@@ -54,12 +54,11 @@ def generate_lesson_video(metaphor_description: str):
                 pass
         
         if not VideoGenerationModel:
+            import google.cloud.aiplatform as aiplatform
             import vertexai.preview.vision_models as vm
-            available = dir(vm)
-            return f"Error: VideoGenerationModel not found. Available in vision_models: {available[:10]}..."
-        
-        if not VideoGenerationModel:
-            return "Error: VideoGenerationModel class not found in vertexai. Please ensure google-cloud-aiplatform is updated to the latest version."
+            v = aiplatform.__version__
+            available = [x for x in dir(vm) if not x.startswith('_')]
+            return f"Error: VideoGenerationModel not found. Version: {v}. Available: {available[:5]}"
 
         model = VideoGenerationModel("veo-001")
         video_response = model.generate_video(
