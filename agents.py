@@ -90,19 +90,33 @@ def generate_lesson_video(metaphor_description: str):
         if response and hasattr(response, 'generated_videos') and response.generated_videos:
             gen_video = response.generated_videos[0]
             
-            # Very aggressive URI/Bytes extraction
+            # Very aggressive URI/Bytes extraction with Magic Number check
             try:
                 import base64
                 
-                # Check for video_bytes first
                 if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'video_bytes') and gen_video.video.video_bytes:
                     data = gen_video.video.video_bytes
-                    # If it's a base64 string, decode it
+                    
+                    # If it's a string, decode it
                     if isinstance(data, str):
                         return base64.b64decode(data)
+                    
+                    # If it's bytes, check if it's already a valid MP4 (starts with ftyp)
+                    # MP4 magic number usually starts at byte 4: 'ftyp'
+                    if isinstance(data, (bytes, bytearray)):
+                        if b'ftyp' in data[:12]:
+                            return data # It's a real MP4
+                        
+                        # If no ftyp, it's likely base64-encoded bytes. Decode it!
+                        try:
+                            decoded = base64.b64decode(data)
+                            if b'ftyp' in decoded[:12]:
+                                return decoded
+                        except:
+                            pass
+                    
                     return data
                 
-                # Fallback to URI
                 if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'uri') and gen_video.video.uri:
                     return str(gen_video.video.uri)
                 
