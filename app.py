@@ -195,8 +195,9 @@ if concept and lens_to_use:
                 with st.spinner("Creating cinematic 5s animation via Veo 3.1 (this may take up to 2 minutes)..."):
                     metaphor_desc = st.session_state.mapping.get("metaphor_description", "The core concept")
                     video_url = generate_lesson_video(metaphor_desc)
-                    if video_url and not isinstance(video_url, str) or (isinstance(video_url, str) and not video_url.startswith("Error")):
-                        st.video(video_url)
+                    if video_url and (not isinstance(video_url, str) or not video_url.startswith("Error")):
+                        # Explicitly set the format to MP4 for raw bytes
+                        st.video(video_url, format="video/mp4")
                         st.success("Video generated successfully!")
                     else:
                         st.warning(f"Video status: {video_url}")
