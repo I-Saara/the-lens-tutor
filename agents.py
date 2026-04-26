@@ -1,7 +1,5 @@
 import json
 import google.generativeai as genai
-import vertexai
-from vertexai.preview.vision_models import VideoGenerationModel
 from typing import Dict
 
 def configure_gemini(api_key: str):
@@ -9,6 +7,7 @@ def configure_gemini(api_key: str):
     genai.configure(api_key=api_key)
     # Vertex AI initialization (requires GCP credentials in environment)
     try:
+        import vertexai
         vertexai.init(location="us-central1")
     except Exception as e:
         print(f"Vertex AI Init Note: {e}")
@@ -16,6 +15,9 @@ def configure_gemini(api_key: str):
 def generate_lesson_video(metaphor_description: str):
     """Calls the Veo model via Vertex AI to generate an educational animation."""
     try:
+        import vertexai
+        from vertexai.preview.vision_models import VideoGenerationModel
+        
         model = VideoGenerationModel("veo-001")
         video_response = model.generate_video(
             prompt=f"Educational animation of {metaphor_description} in a cinematic style, high quality, 3D render",
