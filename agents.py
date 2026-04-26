@@ -37,14 +37,9 @@ def generate_lesson_video(metaphor_description: str):
             
         client = genai.Client(api_key=api_key)
         
-        # Diagnostic: If generate_video is missing, see what IS there
-        if not hasattr(client.models, 'generate_video'):
-            methods = [m for m in dir(client.models) if not m.startswith('_')]
-            return f"Error: 'generate_video' not found. Available methods: {methods}"
-
         # For Veo, we use the model name and provide the prompt
         # Config uses a simpler dictionary format in the new SDK
-        response = client.models.generate_video(
+        response = client.models.generate_videos(
             model='veo-001',
             prompt=f"Educational animation of {metaphor_description} in a cinematic style, high quality, 3D render",
             config={
