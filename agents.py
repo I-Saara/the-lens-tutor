@@ -45,6 +45,18 @@ def generate_lesson_video(metaphor_description: str):
                 from vertexai.vision_models import VideoGenerationModel
             except ImportError:
                 pass
+
+        # Path 3: Generative models preview (sometimes moved here)
+        if not VideoGenerationModel:
+            try:
+                from vertexai.preview.generative_models import VideoGenerationModel
+            except ImportError:
+                pass
+        
+        if not VideoGenerationModel:
+            import vertexai.preview.vision_models as vm
+            available = dir(vm)
+            return f"Error: VideoGenerationModel not found. Available in vision_models: {available[:10]}..."
         
         if not VideoGenerationModel:
             return "Error: VideoGenerationModel class not found in vertexai. Please ensure google-cloud-aiplatform is updated to the latest version."
