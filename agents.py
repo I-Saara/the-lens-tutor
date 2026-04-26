@@ -74,8 +74,7 @@ def generate_lesson_video(metaphor_description: str):
         retries = 0
         while not operation.done and retries < max_retries:
             time.sleep(10)
-            # Use the operation name to get the latest status
-            operation = client.operations.get(name=operation.name)
+            operation = client.operations.get(operation)
             retries += 1
             
         if not operation.done:
