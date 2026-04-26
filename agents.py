@@ -302,6 +302,27 @@ def generate_visual_image(prompt: str):
     except Exception as e:
         return None, f"Error with Imagen 3: {str(e)}"
 
+def video_visualizer_agent(technical_concept: str, selected_lens: str, mapping: Dict[str, str]) -> str:
+    """
+    Agent E - The Video Visualizer.
+    Generates a cinematic video prompt for Veo 3.1.
+    """
+    model = genai.GenerativeModel('gemini-flash-lite-latest')
+    
+    prompt = f"""
+    You are a cinematic director and AI video prompt engineer.
+    Create a 1-paragraph highly detailed video prompt for Veo 3.1 that visualizes the technical concept of "{technical_concept}" through the lens of "{selected_lens}".
+    
+    Use these mapped elements:
+    {json.dumps(mapping, indent=2)}
+    
+    The video should be an educational 3D animation, cinematic lighting, ultra-high quality.
+    Describe the movement, the camera angle, and how the technical concept is being demonstrated through the metaphor.
+    Return ONLY the prompt string.
+    """
+    response = model.generate_content(prompt)
+    return response.text.strip()
+
 def visualizer_agent(technical_concept: str, selected_lens: str, mapping: Dict[str, str]) -> str:
     """
     Agent D - The Visualizer.

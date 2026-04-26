@@ -1,5 +1,5 @@
 import streamlit as st
-from agents import configure_gemini, get_lens_mapping, teacher_agent, fact_checker_agent, visualizer_agent, generate_visual_image, generate_lesson_video
+from agents import configure_gemini, get_lens_mapping, teacher_agent, fact_checker_agent, visualizer_agent, generate_visual_image, generate_lesson_video, video_visualizer_agent
 
 # Set page config
 st.set_page_config(page_title="The Lens Adaptive Tutor", page_icon="🔍", layout="wide")
@@ -134,6 +134,8 @@ if "viz_prompt" not in st.session_state:
     st.session_state.viz_prompt = None
 if "video_data" not in st.session_state:
     st.session_state.video_data = None
+if "video_viz_prompt" not in st.session_state:
+    st.session_state.video_viz_prompt = None
 
 # Generate Action
 if concept and lens_to_use:
@@ -150,6 +152,7 @@ if concept and lens_to_use:
         st.session_state.fact_check = None
         st.session_state.viz_prompt = None
         st.session_state.video_data = None
+        st.session_state.video_viz_prompt = None
             
         # 1. Map Context
         with st.spinner(f"Mapping '{concept}' to the world of '{lens_to_use}'..."):
@@ -167,6 +170,10 @@ if concept and lens_to_use:
             # 4. Visualize
             with st.spinner("Drafting image prompt..."):
                 st.session_state.viz_prompt = visualizer_agent(concept, lens_to_use, st.session_state.mapping)
+                
+            # 5. Video Prompt
+            with st.spinner("Scripting video animation..."):
+                st.session_state.video_viz_prompt = video_visualizer_agent(concept, lens_to_use, st.session_state.mapping)
 
     # Display Results (Outside of the button block so they persist)
     if st.session_state.mapping:
@@ -203,8 +210,8 @@ if concept and lens_to_use:
             
             if st.button("🎥 Generate Video Animation"):
                 with st.spinner("Creating cinematic 8s animation via Veo 3.1 (this may take up to 2 minutes)..."):
-                    metaphor_desc = st.session_state.mapping.get("metaphor_description", "The core concept")
-                    video_url = generate_lesson_video(metaphor_desc)
+                    video_prompt = st.session_state.video_viz_prompt or st.session_state.mapping.get("metaphor_description", "The core concept")
+                    video_url = generate_lesson_video(video_prompt)
                     if video_url and (not isinstance(video_url, str) or not video_url.startswith("Error")):
                         # If it's raw bytes, convert to a Data URI for persistence
                         if isinstance(video_url, bytes):
