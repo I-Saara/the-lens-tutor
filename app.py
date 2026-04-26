@@ -218,5 +218,37 @@ if concept and lens_to_use:
 
             # Display the video if it exists in session state
             if "video_data" in st.session_state:
-                st.video(st.session_state.video_data)
-                st.success("Video generated successfully!")
+                video_val = st.session_state.video_data
+                
+                # If it's a Data URI or Bytes, try to make it a playable file
+                if isinstance(video_val, (bytes, str)):
+                    import tempfile
+                    import os
+                    
+                    # Create a temp file to serve the video
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmpfile:
+                        if isinstance(video_val, bytes):
+                            tmpfile.write(video_val)
+                        elif video_val.startswith("data:video/mp4;base64,"):
+                            import base64
+                            b64_data = video_val.split(",")[1]
+                            tmpfile.write(base64.b64decode(b64_data))
+                        else:
+                            # If it's a URI string, just use it
+                            tmpfile.write(video_val.encode() if isinstance(video_val, str) else video_val)
+                            
+                        temp_path = tmpfile.name
+                    
+                    st.video(temp_path)
+                    st.success("Video generated successfully!")
+                    
+                    # Add a download button as a backup
+                    with open(temp_path, "rb") as f:
+                        st.download_button(
+                            label="📥 Download Video (.mp4)",
+                            data=f,
+                            file_name=f"tutor_animation_{concept}.mp4",
+                            mime="video/mp4"
+                        )
+                else:
+                    st.video(video_val)
