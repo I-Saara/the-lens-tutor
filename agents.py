@@ -92,11 +92,17 @@ def generate_lesson_video(metaphor_description: str):
             
             # Very aggressive URI/Bytes extraction
             try:
-                # Check for video_bytes first (as seen in your last error!)
-                if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'video_bytes') and gen_video.video.video_bytes:
-                    return gen_video.video.video_bytes
+                import base64
                 
-                # Fallback to URI if bytes are missing
+                # Check for video_bytes first
+                if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'video_bytes') and gen_video.video.video_bytes:
+                    data = gen_video.video.video_bytes
+                    # If it's a base64 string, decode it
+                    if isinstance(data, str):
+                        return base64.b64decode(data)
+                    return data
+                
+                # Fallback to URI
                 if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'uri') and gen_video.video.uri:
                     return str(gen_video.video.uri)
                 
