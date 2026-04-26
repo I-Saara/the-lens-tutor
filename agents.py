@@ -187,31 +187,50 @@ def generate_visual_image(prompt: str):
         if response and response.generated_images:
             image = response.generated_images[0]
             data = None
+            
+            # 1. Extract potential data field
             if hasattr(image, 'image') and hasattr(image.image, 'image_bytes'):
                 data = image.image.image_bytes
             elif hasattr(image, 'image_bytes'):
                 data = image.image_bytes
-            
-            if data:
-                if hasattr(data, 'getvalue'):
-                    data = data.getvalue()
+            elif hasattr(image, 'gcs_uri'):
+                return image.gcs_uri, None
                 
-                # Check if it's base64 encoded
-                try:
-                    import base64
-                    # If it's a string, it might be base64
-                    if isinstance(data, str):
-                        return base64.b64decode(data), None
-                    # Even if it's bytes, it might be base64 bytes
-                    # Try to decode it anyway; if it's raw binary, this will likely fail
-                    # or return garbage, so we'll be careful.
-                    # Usually, if it starts with 'iVBORw0KGgo' it's PNG base64.
-                    return data, None
-                except:
-                    return data, None
+            if not data:
+                return None, f"Image found but no data field identified. Attributes: {dir(image)}"
+
+            # 2. Handle BytesIO or similar stream objects
+            if hasattr(data, 'getvalue'):
+                data = data.getvalue()
+
+            # 3. Handle Base64 (The most likely culprit for 'UnidentifiedImageError')
+            import base64
             
-            return None, f"Image object found but bytes missing. Attributes: {dir(image)}"
-        
+            # If it's a string, it's definitely either Base64 or a URL
+            if isinstance(data, str):
+                if data.startswith(('http://', 'https://')):
+                    return data, None
+                try:
+                    return base64.b64decode(data), None
+                except Exception:
+                    return data, None # Fallback to raw string
+
+            # If it's bytes, it might still be Base64-encoded bytes
+            # PNG starts with \x89PNG, JPEG starts with \xff\xd8
+            if isinstance(data, (bytes, bytearray)):
+                if data.startswith(b'\x89PNG') or data.startswith(b'\xff\xd8'):
+                    return data, None # It's already raw binary
+                
+                # Try decoding as base64 just in case
+                try:
+                    decoded = base64.b64decode(data)
+                    if decoded.startswith(b'\x89PNG') or decoded.startswith(b'\xff\xd8'):
+                        return decoded, None
+                except Exception:
+                    pass
+            
+            return data, None
+
         return None, "Image generation failed – no images returned."
 
     except Exception as e:
