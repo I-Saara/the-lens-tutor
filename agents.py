@@ -29,12 +29,26 @@ def generate_lesson_video(metaphor_description: str):
     """Calls the Veo model via Vertex AI to generate an educational animation."""
     try:
         import vertexai
-        try:
-            from vertexai.preview.vision_models import VideoGenerationModel
-        except ImportError:
-            # Fallback for newer versions where it might have moved out of preview
-            from vertexai.vision_models import VideoGenerationModel
+        # Try multiple known import paths for the new Veo model
+        VideoGenerationModel = None
         
+        # Path 1: Preview vision models (standard for Veo)
+        if not VideoGenerationModel:
+            try:
+                from vertexai.preview.vision_models import VideoGenerationModel
+            except ImportError:
+                pass
+                
+        # Path 2: Standard vision models (if moved out of preview)
+        if not VideoGenerationModel:
+            try:
+                from vertexai.vision_models import VideoGenerationModel
+            except ImportError:
+                pass
+        
+        if not VideoGenerationModel:
+            return "Error: VideoGenerationModel class not found in vertexai. Please ensure google-cloud-aiplatform is updated to the latest version."
+
         model = VideoGenerationModel("veo-001")
         video_response = model.generate_video(
             prompt=f"Educational animation of {metaphor_description} in a cinematic style, high quality, 3D render",
