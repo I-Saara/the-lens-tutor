@@ -186,17 +186,29 @@ def generate_visual_image(prompt: str):
         
         if response and response.generated_images:
             image = response.generated_images[0]
-            # Try different attribute paths for different SDK versions
+            data = None
             if hasattr(image, 'image') and hasattr(image.image, 'image_bytes'):
                 data = image.image.image_bytes
-                if hasattr(data, 'getvalue'):
-                    return data.getvalue(), None
-                return data, None
-            if hasattr(image, 'image_bytes'):
+            elif hasattr(image, 'image_bytes'):
                 data = image.image_bytes
+            
+            if data:
                 if hasattr(data, 'getvalue'):
-                    return data.getvalue(), None
-                return data, None
+                    data = data.getvalue()
+                
+                # Check if it's base64 encoded
+                try:
+                    import base64
+                    # If it's a string, it might be base64
+                    if isinstance(data, str):
+                        return base64.b64decode(data), None
+                    # Even if it's bytes, it might be base64 bytes
+                    # Try to decode it anyway; if it's raw binary, this will likely fail
+                    # or return garbage, so we'll be careful.
+                    # Usually, if it starts with 'iVBORw0KGgo' it's PNG base64.
+                    return data, None
+                except:
+                    return data, None
             
             return None, f"Image object found but bytes missing. Attributes: {dir(image)}"
         
