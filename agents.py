@@ -13,7 +13,10 @@ def configure_gemini(api_key: str):
         import vertexai
         if "gcp_service_account" in st.secrets:
             creds_info = st.secrets["gcp_service_account"]
-            credentials = service_account.Credentials.from_service_account_info(creds_info)
+            credentials = service_account.Credentials.from_service_account_info(
+                creds_info,
+                scopes=['https://www.googleapis.com/auth/cloud-platform']
+            )
             vertexai.init(
                 project=creds_info["project_id"],
                 location="us-central1",
@@ -35,7 +38,10 @@ def generate_lesson_video(metaphor_description: str):
             return "Error: GCP Service Account not found in Streamlit Secrets. Video requires the JSON key."
             
         creds_info = st.secrets["gcp_service_account"]
-        credentials = service_account.Credentials.from_service_account_info(creds_info)
+        credentials = service_account.Credentials.from_service_account_info(
+            creds_info, 
+            scopes=['https://www.googleapis.com/auth/cloud-platform']
+        )
         
         # Initialize client with Vertex AI backend
         client = genai.Client(
