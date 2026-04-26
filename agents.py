@@ -1,10 +1,32 @@
 import json
 import google.generativeai as genai
+import vertexai
+from vertexai.preview.vision_models import VideoGenerationModel
 from typing import Dict
 
 def configure_gemini(api_key: str):
-    """Configure the Gemini API key."""
+    """Configure the Gemini API key and Vertex AI."""
     genai.configure(api_key=api_key)
+    # Vertex AI initialization (requires GCP credentials in environment)
+    try:
+        vertexai.init(location="us-central1")
+    except Exception as e:
+        print(f"Vertex AI Init Note: {e}")
+
+def generate_lesson_video(metaphor_description: str):
+    """Calls the Veo model via Vertex AI to generate an educational animation."""
+    try:
+        model = VideoGenerationModel("veo-001")
+        video_response = model.generate_video(
+            prompt=f"Educational animation of {metaphor_description} in a cinematic style, high quality, 3D render",
+            aspect_ratio="16:9",
+            duration=5
+        )
+        # Note: In a real app, you'd handle the VideoGenerationResponse object
+        # For this conceptual logic, we return the first video's path/url if available
+        return video_response[0].video_uri if video_response else None
+    except Exception as e:
+        return f"Error generating video: {str(e)}"
 
 def get_lens_mapping(technical_concept: str, selected_lens: str) -> Dict[str, str]:
     """
