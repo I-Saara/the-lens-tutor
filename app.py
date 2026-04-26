@@ -1,0 +1,164 @@
+import streamlit as st
+from agents import configure_gemini, get_lens_mapping, teacher_agent, fact_checker_agent, visualizer_agent
+
+# Set page config
+st.set_page_config(page_title="The Lens Adaptive Tutor", page_icon="🔍", layout="wide")
+
+# Custom CSS for Vibe-Switch
+VIBE_CSS = {
+    "Trekker": """
+        <style>
+        .stApp { background-color: #e8f5e9; color: #1b5e20; }
+        [data-testid="stHeader"] { background-color: transparent; }
+        .stTextInput>div>div>input { background-color: #c8e6c9; color: #1b5e20; }
+        .stSelectbox>div>div>div { background-color: #c8e6c9; color: #1b5e20; }
+        h1, h2, h3, h4, p, span, label { color: #1b5e20 !important; }
+        </style>
+    """,
+    "MasterChef": """
+        <style>
+        .stApp { background-color: #fff3e0; color: #e65100; }
+        [data-testid="stHeader"] { background-color: transparent; }
+        .stTextInput>div>div>input { background-color: #ffe0b2; color: #e65100; }
+        .stSelectbox>div>div>div { background-color: #ffe0b2; color: #e65100; }
+        h1, h2, h3, h4, p, span, label { color: #e65100 !important; }
+        </style>
+    """,
+    "Founder": """
+        <style>
+        .stApp { background-color: #121212; color: #e0e0e0; }
+        [data-testid="stHeader"] { background-color: transparent; }
+        .stTextInput>div>div>input { background-color: #1e1e1e; color: #fff; }
+        .stSelectbox>div>div>div { background-color: #1e1e1e; color: #fff; }
+        h1, h2, h3, h4, p, span, label { color: #e0e0e0 !important; }
+        .stExpander { background-color: #1e1e1e; }
+        </style>
+    """,
+    "Pro-Gamer": """
+        <style>
+        .stApp { background-color: #1a0033; color: #e0b3ff; }
+        [data-testid="stHeader"] { background-color: transparent; }
+        .stTextInput>div>div>input { background-color: #2d004d; color: #fff; }
+        .stSelectbox>div>div>div { background-color: #2d004d; color: #fff; }
+        h1, h2, h3, h4, p, span, label { color: #e0b3ff !important; }
+        .stExpander { background-color: #2d004d; }
+        </style>
+    """,
+    "Surprise": """
+        <style>
+        .stApp { background-color: #fce4ec; color: #880e4f; }
+        [data-testid="stHeader"] { background-color: transparent; }
+        .stTextInput>div>div>input { background-color: #f8bbd0; color: #880e4f; }
+        .stSelectbox>div>div>div { background-color: #f8bbd0; color: #880e4f; }
+        h1, h2, h3, h4, p, span, label { color: #880e4f !important; }
+        </style>
+    """
+}
+
+# Custom CSS for the Translation Toggle (Tooltips)
+TOOLTIP_CSS = """
+<style>
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 2px dashed currentColor;
+  cursor: help;
+  font-weight: bold;
+}
+
+.tooltip::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff !important;
+  padding: 8px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  font-size: 14px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+  z-index: 1000;
+  box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+</style>
+"""
+st.markdown(TOOLTIP_CSS, unsafe_allow_html=True)
+
+# Sidebar Configuration
+st.sidebar.title("⚙️ Configuration")
+api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Get your key from Google AI Studio")
+
+if api_key:
+    configure_gemini(api_key)
+else:
+    st.warning("⚠️ Please enter your Gemini API Key in the sidebar to start learning.")
+    st.stop()
+
+# Main Application Title
+st.title("🔍 The Lens Adaptive Tutor")
+st.markdown("### *Learn any technical concept through the lens of your interests!*")
+
+# Input Section
+col1, col2 = st.columns(2)
+
+with col1:
+    concept = st.text_input("🧠 Technical Concept", placeholder="e.g., Recursion, React Hooks, DNS")
+
+with col2:
+    mode = st.selectbox("🎭 Select Lens", ["Trekker", "MasterChef", "Founder", "Pro-Gamer", "Surprise"])
+
+custom_lens = None
+if mode == "Surprise":
+    custom_lens = st.text_input("✨ Enter your custom interest", placeholder="e.g., K-Pop, Cricket, Formula 1")
+
+lens_to_use = custom_lens if mode == "Surprise" and custom_lens else mode
+
+# Generate Action
+if concept and lens_to_use:
+    # Inject Vibe CSS
+    vibe = mode if mode in VIBE_CSS else "Surprise"
+    st.markdown(VIBE_CSS[vibe], unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    if st.button("🚀 Generate Lesson"):
+        # 1. Map Context
+        with st.spinner(f"Mapping '{concept}' to the world of '{lens_to_use}'..."):
+            mapping = get_lens_mapping(concept, lens_to_use)
+            
+        with st.expander("🧩 View Context Mapping (Agent A)", expanded=False):
+            if mapping:
+                st.json(mapping)
+            else:
+                st.error("Failed to generate mapping.")
+                
+        if mapping:
+            # 2. Teach
+            with st.spinner("Preparing your lesson..."):
+                lesson = teacher_agent(concept, lens_to_use, mapping)
+                st.markdown("## 📖 The Lesson")
+                st.info("💡 *Hover over the dashed terms to see their technical translation!*")
+                # Using container to ensure CSS context
+                with st.container():
+                    st.markdown(lesson, unsafe_allow_html=True)
+                
+            # 3. Fact Check
+            with st.spinner("Fact-checker verifying technical accuracy..."):
+                fact_check = fact_checker_agent(concept, lesson)
+                st.markdown("## ✅ Fact-Checker Assessment")
+                st.success(fact_check)
+                
+            # 4. Visualize
+            with st.spinner("Drafting image prompt..."):
+                viz_prompt = visualizer_agent(concept, lens_to_use, mapping)
+                st.markdown("## 🎨 Visualizer Prompt (Imagen 3)")
+                st.code(viz_prompt, language="text")
