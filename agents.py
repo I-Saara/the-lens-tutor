@@ -180,7 +180,6 @@ def generate_visual_image(prompt: str):
             prompt=prompt,
             config={
                 'number_of_images': 1,
-                'include_rai_reasoning': True,
                 'aspect_ratio': '16:9'
             }
         )
