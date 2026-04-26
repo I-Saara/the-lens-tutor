@@ -185,8 +185,14 @@ def generate_visual_image(prompt: str):
         )
         
         if response and response.generated_images:
-            # Return the first image bytes for Streamlit
-            return response.generated_images[0].image_bytes, None
+            image = response.generated_images[0]
+            # Try different attribute paths for different SDK versions
+            if hasattr(image, 'image') and hasattr(image.image, 'image_bytes'):
+                return image.image.image_bytes, None
+            if hasattr(image, 'image_bytes'):
+                return image.image_bytes, None
+            
+            return None, f"Image object found but bytes missing. Attributes: {dir(image)}"
         
         return None, "Image generation failed – no images returned."
 
