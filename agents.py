@@ -90,17 +90,27 @@ def generate_lesson_video(metaphor_description: str):
         if response and hasattr(response, 'generated_videos') and response.generated_videos:
             gen_video = response.generated_videos[0]
             
-            # Try multiple paths to get the video data
-            # Veo 3.1 often returns a cloud storage URI
-            if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'uri'):
-                return gen_video.video.uri
+            # Very aggressive URI extraction
+            try:
+                if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'uri') and gen_video.video.uri:
+                    return str(gen_video.video.uri)
+                if hasattr(gen_video, 'uri') and gen_video.uri:
+                    return str(gen_video.uri)
+                # Some versions use 'gcs_uri'
+                if hasattr(gen_video, 'gcs_uri') and gen_video.gcs_uri:
+                    return str(gen_video.gcs_uri)
+            except:
+                pass
             
-            return f"Video generated but URI missing. Attributes: {[m for m in dir(gen_video) if not m.startswith('_')]}"
+            return f"Video generated but URI extraction failed. Data: {str(gen_video)[:200]}"
         
-        return "Video generation completed, but no result was found. This can happen if safety filters were triggered."
+        return "Video generation completed, but the result list was empty."
 
     except Exception as e:
-        return f"Error with Veo 3.1: {str(e)}"
+        import traceback
+        return f"Error with Veo 3.1: {str(e)}\n{traceback.format_exc()[:200]}"
+    
+    return "Unknown error occurred in video agent."
 
 def get_lens_mapping(technical_concept: str, selected_lens: str) -> Dict[str, str]:
     """
