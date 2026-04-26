@@ -154,6 +154,46 @@ def fact_checker_agent(technical_concept: str, explanation: str) -> str:
         raise RuntimeError("Fact-Checker Agent returned an empty response.")
     return response.text
 
+def generate_visual_image(prompt: str):
+    """Calls Imagen 3 via Vertex AI to generate the visual representation."""
+    try:
+        from google import genai
+        
+        if "gcp_service_account" not in st.secrets:
+            return None, "Error: GCP Service Account not found for Image Generation."
+            
+        creds_info = st.secrets["gcp_service_account"]
+        credentials = service_account.Credentials.from_service_account_info(
+            creds_info, 
+            scopes=['https://www.googleapis.com/auth/cloud-platform']
+        )
+        
+        client = genai.Client(
+            vertexai=True, 
+            project=creds_info["project_id"], 
+            location="us-central1",
+            credentials=credentials
+        )
+        
+        response = client.models.generate_images(
+            model='imagen-3.0-generate-001',
+            prompt=prompt,
+            config={
+                'number_of_images': 1,
+                'include_rai_reasoning': True,
+                'aspect_ratio': '16:9'
+            }
+        )
+        
+        if response and response.generated_images:
+            # Return the first image bytes for Streamlit
+            return response.generated_images[0].image_bytes, None
+        
+        return None, "Image generation failed – no images returned."
+
+    except Exception as e:
+        return None, f"Error with Imagen 3: {str(e)}"
+
 def visualizer_agent(technical_concept: str, selected_lens: str, mapping: Dict[str, str]) -> str:
     """
     Agent D - The Visualizer.

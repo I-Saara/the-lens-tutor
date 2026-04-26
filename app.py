@@ -1,5 +1,5 @@
 import streamlit as st
-from agents import configure_gemini, get_lens_mapping, teacher_agent, fact_checker_agent, visualizer_agent, generate_lesson_video
+from agents import configure_gemini, get_lens_mapping, teacher_agent, fact_checker_agent, visualizer_agent, generate_visual_image
 
 # Set page config
 st.set_page_config(page_title="The Lens Adaptive Tutor", page_icon="🔍", layout="wide")
@@ -175,18 +175,15 @@ if concept and lens_to_use:
             st.success(st.session_state.fact_check)
             
         if st.session_state.viz_prompt:
-            st.markdown("## 🎨 Visualizer Prompt (Imagen 3)")
+            st.markdown("---")
+            st.markdown("## 🎨 Visualizer (Imagen 3)")
             st.code(st.session_state.viz_prompt, language="text")
             
-        # 5. Video (Veo)
-        st.markdown("---")
-        st.markdown("## 🎬 Video Learning (Veo Agent)")
-        if st.button("🎥 Generate Video Animation"):
-            with st.spinner("Creating cinematic animation via Vertex AI..."):
-                metaphor_desc = st.session_state.mapping.get("metaphor_description", "The core concept")
-                video_url = generate_lesson_video(metaphor_desc)
-                if video_url and not isinstance(video_url, str) or (isinstance(video_url, str) and not video_url.startswith("Error")):
-                    st.video(video_url)
-                    st.success("Video generated successfully!")
-                else:
-                    st.warning(f"Note: Video generation is currently in preview or failed. Details: {video_url}")
+            if st.button("🖼️ Generate AI Visual"):
+                with st.spinner("Bringing the metaphor to life with Imagen 3..."):
+                    img_bytes, error = generate_visual_image(st.session_state.viz_prompt)
+                    if img_bytes:
+                        st.image(img_bytes, caption=f"{concept} through the lens of {lens_to_use}")
+                        st.success("Visual generated successfully!")
+                    else:
+                        st.error(f"Failed to generate image: {error}")
