@@ -35,7 +35,7 @@ def get_lens_mapping(technical_concept: str, selected_lens: str) -> Dict[str, st
     Agent A - The Context Mapper (Orchestrator).
     Maps technical terms to metaphorical equivalents based on the lens.
     """
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
     You are an expert Context Mapper.
@@ -56,11 +56,10 @@ def get_lens_mapping(technical_concept: str, selected_lens: str) -> Dict[str, st
     response = model.generate_content(
         prompt, 
         generation_config={"response_mime_type": "application/json"}
-        if not response.text:
-            raise RuntimeError("Gemini returned an empty response – check model availability and prompt.")
-        return response.text
-
     )
+    
+    if not response.text:
+        raise RuntimeError("Gemini returned an empty response – check model availability and prompt.")
     
     try:
         mapping = json.loads(response.text)
@@ -74,7 +73,7 @@ def teacher_agent(technical_concept: str, selected_lens: str, mapping: Dict[str,
     Agent B - The Teacher.
     Delivers the lesson using the generated metaphors.
     """
-    model = genai.GenerativeModel('gemini-2.0-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     mapping_str = "\n".join([f'- {tech}: "{metaphor}"' for tech, metaphor in mapping.items()])
     
@@ -91,6 +90,8 @@ def teacher_agent(technical_concept: str, selected_lens: str, mapping: Dict[str,
     Keep the explanation engaging, accurate to the metaphor, and around 2-3 paragraphs.
     """
     response = model.generate_content(prompt)
+    if not response.text:
+        raise RuntimeError("Teacher Agent returned an empty response.")
     return response.text
 
 def fact_checker_agent(technical_concept: str, explanation: str) -> str:
@@ -110,6 +111,8 @@ def fact_checker_agent(technical_concept: str, explanation: str) -> str:
     Provide a brief (1 paragraph) assessment of the accuracy. Point out any flaws or confirm that the analogy holds up technically.
     """
     response = model.generate_content(prompt)
+    if not response.text:
+        raise RuntimeError("Fact-Checker Agent returned an empty response.")
     return response.text
 
 def visualizer_agent(technical_concept: str, selected_lens: str, mapping: Dict[str, str]) -> str:
@@ -128,4 +131,6 @@ def visualizer_agent(technical_concept: str, selected_lens: str, mapping: Dict[s
     The prompt should specify lighting, mood, style, and composition. Return only the prompt string, no extra text.
     """
     response = model.generate_content(prompt)
+    if not response.text:
+        raise RuntimeError("Visualizer Agent returned an empty response.")
     return response.text
