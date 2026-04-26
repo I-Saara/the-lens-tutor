@@ -69,32 +69,34 @@ def generate_lesson_video(metaphor_description: str):
             model="veo-3.1-generate-001", source=source, config=config
         )
 
-        # Poll for completion (with a limit so we don't block forever)
-        max_retries = 30 # 5 minutes max
+        # Poll for completion
+        max_retries = 30
         retries = 0
         while not operation.done and retries < max_retries:
             time.sleep(10)
-            operation = client.operations.get(operation)
+            # Use the operation name to get the latest status
+            operation = client.operations.get(name=operation.name)
             retries += 1
             
         if not operation.done:
-            return "Video generation is taking longer than expected. Please try again in a few minutes."
+            return "Video generation is taking longer than expected. The AI is still rendering!"
+
+        # Check for errors in the operation itself
+        if hasattr(operation, 'error') and operation.error:
+            return f"Veo 3.1 Error: {operation.error.message}"
 
         response = operation.result
         if response and hasattr(response, 'generated_videos') and response.generated_videos:
             gen_video = response.generated_videos[0]
             
             # Try multiple paths to get the video data
+            # Veo 3.1 often returns a cloud storage URI
             if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'uri'):
                 return gen_video.video.uri
-            if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'video_bytes'):
-                return gen_video.video.video_bytes
-            if hasattr(gen_video, 'uri'):
-                return gen_video.uri
             
-            return f"Video generated but URI missing. Attributes: {dir(gen_video)}"
+            return f"Video generated but URI missing. Attributes: {[m for m in dir(gen_video) if not m.startswith('_')]}"
         
-        return "Video generation completed, but the response was empty."
+        return "Video generation completed, but no result was found. This can happen if safety filters were triggered."
 
     except Exception as e:
         return f"Error with Veo 3.1: {str(e)}"
