@@ -132,6 +132,8 @@ if "fact_check" not in st.session_state:
     st.session_state.fact_check = None
 if "viz_prompt" not in st.session_state:
     st.session_state.viz_prompt = None
+if "video_data" not in st.session_state:
+    st.session_state.video_data = None
 
 # Generate Action
 if concept and lens_to_use:
@@ -142,6 +144,13 @@ if concept and lens_to_use:
     st.markdown("---")
     
     if st.button("🚀 Generate Lesson"):
+        # Reset previous state
+        st.session_state.mapping = None
+        st.session_state.lesson = None
+        st.session_state.fact_check = None
+        st.session_state.viz_prompt = None
+        st.session_state.video_data = None
+            
         # 1. Map Context
         with st.spinner(f"Mapping '{concept}' to the world of '{lens_to_use}'..."):
             st.session_state.mapping = get_lens_mapping(concept, lens_to_use)
@@ -191,18 +200,23 @@ if concept and lens_to_use:
             # 5. Video (Veo 3.1)
             st.markdown("---")
             st.markdown("## 🎬 Video Learning (Veo 3.1)")
+            
             if st.button("🎥 Generate Video Animation"):
-                with st.spinner("Creating cinematic 5s animation via Veo 3.1 (this may take up to 2 minutes)..."):
+                with st.spinner("Creating cinematic 8s animation via Veo 3.1 (this may take up to 2 minutes)..."):
                     metaphor_desc = st.session_state.mapping.get("metaphor_description", "The core concept")
                     video_url = generate_lesson_video(metaphor_desc)
                     if video_url and (not isinstance(video_url, str) or not video_url.startswith("Error")):
-                        # If it's raw bytes, convert to a Data URI for better browser compatibility
+                        # If it's raw bytes, convert to a Data URI for persistence
                         if isinstance(video_url, bytes):
                             import base64
                             b64 = base64.b64encode(video_url).decode()
-                            video_url = f"data:video/mp4;base64,{b64}"
-                        
-                        st.video(video_url)
-                        st.success("Video generated successfully!")
+                            st.session_state.video_data = f"data:video/mp4;base64,{b64}"
+                        else:
+                            st.session_state.video_data = video_url
                     else:
-                        st.warning(f"Video status: {video_url}")
+                        st.error(f"Video generation failed: {video_url}")
+
+            # Display the video if it exists in session state
+            if "video_data" in st.session_state:
+                st.video(st.session_state.video_data)
+                st.success("Video generated successfully!")
