@@ -35,7 +35,7 @@ def get_lens_mapping(technical_concept: str, selected_lens: str) -> Dict[str, st
     Agent A - The Context Mapper (Orchestrator).
     Maps technical terms to metaphorical equivalents based on the lens.
     """
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     prompt = f"""
     You are an expert Context Mapper.
@@ -73,7 +73,7 @@ def teacher_agent(technical_concept: str, selected_lens: str, mapping: Dict[str,
     Agent B - The Teacher.
     Delivers the lesson using the generated metaphors.
     """
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     mapping_str = "\n".join([f'- {tech}: "{metaphor}"' for tech, metaphor in mapping.items()])
     
@@ -99,7 +99,7 @@ def fact_checker_agent(technical_concept: str, explanation: str) -> str:
     Agent C - The Fact-Checker.
     Verifies the technical accuracy of the metaphorical explanation.
     """
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     prompt = f"""
     You are a Fact-Checker Agent.
@@ -120,7 +120,7 @@ def visualizer_agent(technical_concept: str, selected_lens: str, mapping: Dict[s
     Agent D - The Visualizer.
     Generates a prompt for Imagen 3 based on the metaphor mapping.
     """
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     prompt = f"""
     You are an expert prompt engineer for Imagen 3.
