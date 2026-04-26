@@ -58,7 +58,7 @@ def generate_lesson_video(metaphor_description: str):
         config = types.GenerateVideosConfig(
             aspect_ratio="16:9",
             number_of_videos=1,
-            duration_seconds=5,
+            duration_seconds=8,
             person_generation="allow_all",
             generate_audio=False,
             resolution="720p",
