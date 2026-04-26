@@ -26,57 +26,37 @@ def configure_gemini(api_key: str):
         print(f"Vertex AI Init Note: {e}")
 
 def generate_lesson_video(metaphor_description: str):
-    """Calls the Veo model via Vertex AI to generate an educational animation."""
+    """Calls the Veo model via the new google-genai SDK to generate an educational animation."""
     try:
-        import vertexai
-        # Try multiple known import paths for the new Veo model
-        VideoGenerationModel = None
+        from google import genai
         
-        # Path 1: Preview vision models (standard for Veo)
-        if not VideoGenerationModel:
-            try:
-                from vertexai.preview.vision_models import VideoGenerationModel
-            except ImportError:
-                pass
-                
-        # Path 2: Standard vision models (if moved out of preview)
-        if not VideoGenerationModel:
-            try:
-                from vertexai.vision_models import VideoGenerationModel
-            except ImportError:
-                pass
-
-        # Path 3: Generative models preview (sometimes moved here)
-        if not VideoGenerationModel:
-            try:
-                from vertexai.preview.generative_models import VideoGenerationModel
-            except ImportError:
-                pass
+        # Use the API key provided in the app
+        api_key = st.session_state.get("api_key")
+        if not api_key:
+            return "Error: API Key not found in session state. Please re-enter your key."
+            
+        client = genai.Client(api_key=api_key)
         
-        # Path 4: Try the main generative_models (not preview)
-        if not VideoGenerationModel:
-            try:
-                from vertexai.generative_models import VideoGenerationModel
-            except ImportError:
-                pass
-
-        if not VideoGenerationModel:
-            import vertexai.preview as prev
-            v = aiplatform.__version__
-            available_preview = [x for x in dir(prev) if not x.startswith('_')]
-            return f"Error: Not in vision_models. Version: {v}. Available in vertexai.preview: {available_preview[:10]}"
-
-        model = VideoGenerationModel("veo-001")
-        video_response = model.generate_video(
+        # For Veo, we use the model name and provide the prompt
+        # Config uses a simpler dictionary format in the new SDK
+        response = client.models.generate_video(
+            model='veo-001',
             prompt=f"Educational animation of {metaphor_description} in a cinematic style, high quality, 3D render",
-            aspect_ratio="16:9",
-            duration=5
+            config={
+                'duration_seconds': 5,
+                'aspect_ratio': '16:9'
+            }
         )
-        # Note: In a real app, you'd handle the VideoGenerationResponse object
-        # For this conceptual logic, we return the first video's path/url if available
-        return video_response[0].video_uri if video_response else None
+        
+        # In the new SDK, the response object contains the video data
+        if response and hasattr(response, 'generated_videos') and response.generated_videos:
+            # We return the first generated video
+            return response.generated_videos[0].video_uri
+        
+        return "Video generation started, but no direct URI returned yet. Please wait a moment."
+
     except Exception as e:
-        return f"Error generating video: {str(e)}"
+        return f"Error with google-genai SDK: {str(e)}"
 
 def get_lens_mapping(technical_concept: str, selected_lens: str) -> Dict[str, str]:
     """
