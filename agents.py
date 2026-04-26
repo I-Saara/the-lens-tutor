@@ -16,7 +16,11 @@ def generate_lesson_video(metaphor_description: str):
     """Calls the Veo model via Vertex AI to generate an educational animation."""
     try:
         import vertexai
-        from vertexai.preview.vision_models import VideoGenerationModel
+        try:
+            from vertexai.preview.vision_models import VideoGenerationModel
+        except ImportError:
+            # Fallback for newer versions where it might have moved out of preview
+            from vertexai.vision_models import VideoGenerationModel
         
         model = VideoGenerationModel("veo-001")
         video_response = model.generate_video(
