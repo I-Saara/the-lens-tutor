@@ -90,15 +90,18 @@ def generate_lesson_video(metaphor_description: str):
         if response and hasattr(response, 'generated_videos') and response.generated_videos:
             gen_video = response.generated_videos[0]
             
-            # Very aggressive URI extraction
+            # Very aggressive URI/Bytes extraction
             try:
+                # Check for video_bytes first (as seen in your last error!)
+                if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'video_bytes') and gen_video.video.video_bytes:
+                    return gen_video.video.video_bytes
+                
+                # Fallback to URI if bytes are missing
                 if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'uri') and gen_video.video.uri:
                     return str(gen_video.video.uri)
+                
                 if hasattr(gen_video, 'uri') and gen_video.uri:
                     return str(gen_video.uri)
-                # Some versions use 'gcs_uri'
-                if hasattr(gen_video, 'gcs_uri') and gen_video.gcs_uri:
-                    return str(gen_video.gcs_uri)
             except:
                 pass
             
