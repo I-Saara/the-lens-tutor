@@ -81,11 +81,20 @@ def generate_lesson_video(metaphor_description: str):
             return "Video generation is taking longer than expected. Please try again in a few minutes."
 
         response = operation.result
-        if response and response.generated_videos:
-            # Return the first video's URI
-            return response.generated_videos[0].video.uri
+        if response and hasattr(response, 'generated_videos') and response.generated_videos:
+            gen_video = response.generated_videos[0]
+            
+            # Try multiple paths to get the video data
+            if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'uri'):
+                return gen_video.video.uri
+            if hasattr(gen_video, 'video') and hasattr(gen_video.video, 'video_bytes'):
+                return gen_video.video.video_bytes
+            if hasattr(gen_video, 'uri'):
+                return gen_video.uri
+            
+            return f"Video generated but URI missing. Attributes: {dir(gen_video)}"
         
-        return "Video generation completed, but no video URI was found in the response."
+        return "Video generation completed, but the response was empty."
 
     except Exception as e:
         return f"Error with Veo 3.1: {str(e)}"
