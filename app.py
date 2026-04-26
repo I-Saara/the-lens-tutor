@@ -196,8 +196,13 @@ if concept and lens_to_use:
                     metaphor_desc = st.session_state.mapping.get("metaphor_description", "The core concept")
                     video_url = generate_lesson_video(metaphor_desc)
                     if video_url and (not isinstance(video_url, str) or not video_url.startswith("Error")):
-                        # Explicitly set the format to MP4 for raw bytes
-                        st.video(video_url, format="video/mp4")
+                        # If it's raw bytes, convert to a Data URI for better browser compatibility
+                        if isinstance(video_url, bytes):
+                            import base64
+                            b64 = base64.b64encode(video_url).decode()
+                            video_url = f"data:video/mp4;base64,{b64}"
+                        
+                        st.video(video_url)
                         st.success("Video generated successfully!")
                     else:
                         st.warning(f"Video status: {video_url}")
