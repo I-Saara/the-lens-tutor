@@ -82,7 +82,9 @@ def generate_lesson_video(metaphor_description: str):
 
         # Check for errors in the operation itself
         if hasattr(operation, 'error') and operation.error:
-            return f"Veo 3.1 Error: {operation.error.message}"
+            err = operation.error
+            err_msg = err.get('message') if isinstance(err, dict) else getattr(err, 'message', str(err))
+            return f"Veo 3.1 Error: {err_msg}"
 
         response = operation.result
         if response and hasattr(response, 'generated_videos') and response.generated_videos:
