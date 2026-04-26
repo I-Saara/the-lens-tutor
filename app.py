@@ -1,5 +1,5 @@
 import streamlit as st
-from agents import configure_gemini, get_lens_mapping, teacher_agent, fact_checker_agent, visualizer_agent, generate_visual_image
+from agents import configure_gemini, get_lens_mapping, teacher_agent, fact_checker_agent, visualizer_agent, generate_visual_image, generate_lesson_video
 
 # Set page config
 st.set_page_config(page_title="The Lens Adaptive Tutor", page_icon="🔍", layout="wide")
@@ -187,3 +187,16 @@ if concept and lens_to_use:
                         st.success("Visual generated successfully!")
                     else:
                         st.error(f"Failed to generate image: {error}")
+
+            # 5. Video (Veo 3.1)
+            st.markdown("---")
+            st.markdown("## 🎬 Video Learning (Veo 3.1)")
+            if st.button("🎥 Generate Video Animation"):
+                with st.spinner("Creating cinematic 5s animation via Veo 3.1 (this may take up to 2 minutes)..."):
+                    metaphor_desc = st.session_state.mapping.get("metaphor_description", "The core concept")
+                    video_url = generate_lesson_video(metaphor_desc)
+                    if video_url and not isinstance(video_url, str) or (isinstance(video_url, str) and not video_url.startswith("Error")):
+                        st.video(video_url)
+                        st.success("Video generated successfully!")
+                    else:
+                        st.warning(f"Video status: {video_url}")

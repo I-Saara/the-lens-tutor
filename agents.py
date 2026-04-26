@@ -29,13 +29,14 @@ def configure_gemini(api_key: str):
         print(f"Vertex AI Init Note: {e}")
 
 def generate_lesson_video(metaphor_description: str):
-    """Calls the Veo model via Vertex AI using the Service Account for guaranteed access."""
+    """Calls Veo 3.1 via Vertex AI using the exact logic for the newest generation model."""
     try:
         from google import genai
+        from google.genai import types
+        import time
         
-        # Use Service Account from secrets
         if "gcp_service_account" not in st.secrets:
-            return "Error: GCP Service Account not found in Streamlit Secrets. Video requires the JSON key."
+            return "Error: GCP Service Account JSON not found in secrets."
             
         creds_info = st.secrets["gcp_service_account"]
         credentials = service_account.Credentials.from_service_account_info(
@@ -43,7 +44,6 @@ def generate_lesson_video(metaphor_description: str):
             scopes=['https://www.googleapis.com/auth/cloud-platform']
         )
         
-        # Initialize client with Vertex AI backend
         client = genai.Client(
             vertexai=True, 
             project=creds_info["project_id"], 
@@ -51,23 +51,44 @@ def generate_lesson_video(metaphor_description: str):
             credentials=credentials
         )
         
-        # Call Veo on Vertex AI
-        response = client.models.generate_videos(
-            model='veo-001',
-            prompt=f"Educational animation of {metaphor_description} in a cinematic style, high quality, 3D render",
-            config={
-                'duration_seconds': 5,
-                'aspect_ratio': '16:9'
-            }
+        source = types.GenerateVideosSource(
+            prompt=f"Educational animation of {metaphor_description} in a cinematic style, high quality, 3D render, smooth motion",
         )
+
+        config = types.GenerateVideosConfig(
+            aspect_ratio="16:9",
+            number_of_videos=1,
+            duration_seconds=5,
+            person_generation="allow_all",
+            generate_audio=False,
+            resolution="720p",
+        )
+
+        # Start the video generation
+        operation = client.models.generate_videos(
+            model="veo-3.1-generate-001", source=source, config=config
+        )
+
+        # Poll for completion (with a limit so we don't block forever)
+        max_retries = 30 # 5 minutes max
+        retries = 0
+        while not operation.done and retries < max_retries:
+            time.sleep(10)
+            operation = client.operations.get(operation)
+            retries += 1
+            
+        if not operation.done:
+            return "Video generation is taking longer than expected. Please try again in a few minutes."
+
+        response = operation.result
+        if response and response.generated_videos:
+            # Return the first video's URI
+            return response.generated_videos[0].video.uri
         
-        if response and hasattr(response, 'generated_videos') and response.generated_videos:
-            return response.generated_videos[0].video_uri
-        
-        return "Video generation started on Vertex AI! Note: High-quality generation can take a minute."
+        return "Video generation completed, but no video URI was found in the response."
 
     except Exception as e:
-        return f"Error with Vertex AI Video: {str(e)}"
+        return f"Error with Veo 3.1: {str(e)}"
 
 def get_lens_mapping(technical_concept: str, selected_lens: str) -> Dict[str, str]:
     """
