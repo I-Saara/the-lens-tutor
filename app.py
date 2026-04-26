@@ -98,6 +98,7 @@ st.sidebar.title("⚙️ Configuration")
 api_key = st.sidebar.text_input("Gemini API Key", type="password", help="Get your key from Google AI Studio")
 
 if api_key:
+    st.session_state["api_key"] = api_key
     configure_gemini(api_key)
 else:
     st.warning("⚠️ Please enter your Gemini API Key in the sidebar to start learning.")
