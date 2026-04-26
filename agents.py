@@ -56,6 +56,10 @@ def get_lens_mapping(technical_concept: str, selected_lens: str) -> Dict[str, st
     response = model.generate_content(
         prompt, 
         generation_config={"response_mime_type": "application/json"}
+        if not response.text:
+            raise RuntimeError("Gemini returned an empty response – check model availability and prompt.")
+        return response.text
+
     )
     
     try:
