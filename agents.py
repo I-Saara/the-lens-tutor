@@ -26,27 +26,26 @@ def configure_gemini(api_key: str):
         print(f"Vertex AI Init Note: {e}")
 
 def generate_lesson_video(metaphor_description: str):
-    """Calls the Veo model via the new google-genai SDK to generate an educational animation."""
+    """Calls the Veo model via Vertex AI using the Service Account for guaranteed access."""
     try:
         from google import genai
         
-        # Use the API key provided in the app
-        api_key = st.session_state.get("api_key")
-        if not api_key:
-            return "Error: API Key not found in session state. Please re-enter your key."
+        # Use Service Account from secrets
+        if "gcp_service_account" not in st.secrets:
+            return "Error: GCP Service Account not found in Streamlit Secrets. Video requires the JSON key."
             
-        client = genai.Client(api_key=api_key)
+        creds_info = st.secrets["gcp_service_account"]
+        credentials = service_account.Credentials.from_service_account_info(creds_info)
         
-        # Diagnostic: List models to see if veo-001 is available
-        try:
-            available_models = [m.name for m in client.models.list()]
-            if 'models/veo-001' not in available_models and 'veo-001' not in available_models:
-                return f"Error: 'veo-001' not found in your account. Available models: {available_models[:10]}..."
-        except Exception as e:
-            print(f"Model list diagnostic failed: {e}")
-            
-        # For Veo, we use the model name and provide the prompt
-        # Config uses a simpler dictionary format in the new SDK
+        # Initialize client with Vertex AI backend
+        client = genai.Client(
+            vertexai=True, 
+            project=creds_info["project_id"], 
+            location="us-central1",
+            credentials=credentials
+        )
+        
+        # Call Veo on Vertex AI
         response = client.models.generate_videos(
             model='veo-001',
             prompt=f"Educational animation of {metaphor_description} in a cinematic style, high quality, 3D render",
@@ -56,15 +55,13 @@ def generate_lesson_video(metaphor_description: str):
             }
         )
         
-        # In the new SDK, the response object contains the video data
         if response and hasattr(response, 'generated_videos') and response.generated_videos:
-            # We return the first generated video
             return response.generated_videos[0].video_uri
         
-        return "Video generation started, but no direct URI returned yet. Please wait a moment."
+        return "Video generation started on Vertex AI! Note: High-quality generation can take a minute."
 
     except Exception as e:
-        return f"Error with google-genai SDK: {str(e)}"
+        return f"Error with Vertex AI Video: {str(e)}"
 
 def get_lens_mapping(technical_concept: str, selected_lens: str) -> Dict[str, str]:
     """
